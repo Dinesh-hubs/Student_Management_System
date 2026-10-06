@@ -22,3 +22,7 @@ class student_update(BaseModel):
     roll_number : int
     parameter : str
     parameter_value : str | int | float
+
+class student_search(BaseModel):
+    parameter : str
+    value : str | int | float

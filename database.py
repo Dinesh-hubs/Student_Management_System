@@ -41,12 +41,20 @@ def update_student(rno,parameter,parameter_value):
     connection = get_connection()
     cursor = connection.cursor()
 
+    cursor.execute('SELECT EXISTS (SELECT 1 FROM students WHERE roll_number = ?)', (rno,))
+    exists = cursor.fetchone()[0]
+
     if parameter not in ALLOWED_PARAMETERS:
         raise ValueError("Invalid Parameter.")
 
-    cursor.execute(f"UPDATE students SET {parameter} = ? WHERE roll_number = ?", (parameter_value,rno))
-    connection.commit()
-    connection.close()
+    if exists:
+        cursor.execute(f"UPDATE students SET {parameter} = ? WHERE roll_number = ?", (parameter_value,rno))
+        connection.commit()
+        connection.close()
+        return True
+    else:
+        connection.close()
+        return False
 
 def delete_student(rno):
     connection = get_connection()
@@ -69,5 +77,29 @@ def get_student_by_rno(rno):
 
     return student
 
+def search_student(parameter,value):
+    connection = get_connection()
+    cursor = connection.cursor()
+    parameter = parameter.lower()
+
+    if parameter == "rno":
+        connection.close()
+        return get_student_by_rno(value)
+
+    elif parameter not in ALLOWED_PARAMETERS :
+        raise ValueError("Invalid Parameter")
+
+    if parameter == "name":
+        cursor.execute(f"SELECT * FROM students WHERE {parameter} COLLATE NOCASE = ?",(value,))
+    else:
+        cursor.execute(f"SELECT * FROM students WHERE {parameter} = ?",(value,))
+
+    student = cursor.fetchall()
+
+    connection.close()
+
+    return student
+
 if __name__ == "__main__":
-    obj = insert_student(101,'DD',12,18,90,98)
+    obj = search_student("physics",67)
+    print(obj)

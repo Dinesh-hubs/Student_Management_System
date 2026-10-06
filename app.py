@@ -28,7 +28,7 @@ def get_students():
     return result
 
 
-def pretty_print(student_data):
+def convert_student(student_data):
     if not student_data:
         return
     converted_student = student_get(
@@ -41,13 +41,24 @@ def pretty_print(student_data):
     )
     return converted_student
 
+def pretty_print(student_data):
+    if not student_data:
+        return []
+
+    result = []
+
+    for student in student_data:
+        result.append(convert_student(student))
+
+    return result
+
 @app.post("/post_student", response_model = student_get)
 def add_student(student : student_post):
     success = insert_student(student.roll_number,student.name,student.class_number,student.age,student.physics,student.chemistry)
     if not success:
         raise HTTPException(status_code=409, detail = "Student already exists with this roll number.")
     std = get_student_by_rno(student.roll_number)
-    pretty_std = pretty_print(std)
+    pretty_std = convert_student(std)
     return pretty_std
 
 
@@ -58,7 +69,7 @@ def update_std(student : student_update):
         "name" : str,
         "class_number" : int,
         "age" : int,
-        "physiics" : float,
+        "physics" : float,
         "chemistry" : float
     }
 
@@ -67,13 +78,15 @@ def update_std(student : student_update):
 
     expected_type = allowed_parameters[student.parameter]
 
-    if not isinstance(student.parameter, expected_type):
+    if not isinstance(student.parameter_value, expected_type):
         raise HTTPException(status_code = 400, detail = f"{student.parameter} must be of type {expected_type.__name__}")
 
-    update_student(student.roll_number,student.parameter,student.parameter_value)
+    success = update_student(student.roll_number,student.parameter,student.parameter_value)
+    if not success:
+        raise HTTPException(status_code= 409, detail = "There is no student with those details.")
 
     updated_student = get_student_by_rno(student.roll_number)
-    pretty_std = pretty_print(updated_student)
+    pretty_std = convert_student(updated_student)
 
     return pretty_std
 
@@ -90,3 +103,31 @@ def remove_student(roll_number : int):
         "message" : "Student data removed successfully.",
         "roll number" : roll_number
     }
+
+@app.get("/search_student", response_model = list[student_get])
+def search_students(parameter : str, value : str):
+    allowed_parameters = {
+            "name" : str,
+            "class_number" : int,
+            "age" : int,
+            "physics" : float,
+            "chemistry" : float
+        }
+
+    parameter = parameter.lower()
+    
+    if parameter not in allowed_parameters:
+        raise HTTPException(status_code=400, detail = "Invalid Parameter")
+
+    expected_type = allowed_parameters[parameter]
+
+    try:
+        if expected_type == int:
+            value = int(value)
+        elif expected_type == float:
+            value = float(value)
+    except ValueError:
+            raise HTTPException(status_code = 400, detail = f"{parameter} must be of type {expected_type.__name__}")
+        
+    d_student = search_student(parameter = parameter, value = value)
+    return pretty_print(d_student)
