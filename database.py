@@ -30,8 +30,8 @@ def insert_student(rno,name,class_num,age,phy,chem):
     exists = cursor.fetchone()[0]
 
     if exists:
-        print("There is already a student with the roll number")
         connection.close()
+        return False
     else:
         cursor.execute("INSERT INTO students (roll_number,name,class_number,age,physics,chemistry) VALUES (?,?,?,?,?,?)",(rno,name,class_num,age,phy,chem))
         connection.commit()

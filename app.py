@@ -43,7 +43,9 @@ def pretty_print(student_data):
 
 @app.post("/post_student", response_model = student_get)
 def add_student(student : student_post):
-    insert_student(student.roll_number,student.name,student.class_number,student.age,student.physics,student.chemistry)
+    success = insert_student(student.roll_number,student.name,student.class_number,student.age,student.physics,student.chemistry)
+    if not success:
+        raise HTTPException(status_code=409, detail = "Student already exists with this roll number.")
     std = get_student_by_rno(student.roll_number)
     pretty_std = pretty_print(std)
     return pretty_std
